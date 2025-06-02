@@ -44,6 +44,10 @@ func parameterSchema(param *sharedpb.Parameter) Schema {
 }
 
 func buildOpenAPI(graph *sharedpb.APIGraph) (*OpenAPI, error) {
+	if graph.GetSegments() == nil {
+		return nil, nil
+	}
+
 	idToSegment := map[string]*sharedpb.PathSegment{}
 	for _, s := range graph.Segments {
 		switch seg := s.Segment.(type) {
@@ -54,7 +58,6 @@ func buildOpenAPI(graph *sharedpb.APIGraph) (*OpenAPI, error) {
 		}
 	}
 
-	// постройка путей
 	type Node struct {
 		ID     string
 		Parent *Node
@@ -64,13 +67,11 @@ func buildOpenAPI(graph *sharedpb.APIGraph) (*OpenAPI, error) {
 		graphMap[e.From] = append(graphMap[e.From], e.To)
 	}
 
-	// найти все операции
 	opsBySegment := map[string][]*sharedpb.Operation{}
 	for _, op := range graph.Operations {
 		opsBySegment[op.PathSegmentId] = append(opsBySegment[op.PathSegmentId], op)
 	}
 
-	// DFS для генерации путей
 	var paths = map[string]map[string]Path{}
 
 	var dfs func(n *Node, segments []string, inheritedParams []Parameter)
@@ -101,7 +102,7 @@ func buildOpenAPI(graph *sharedpb.APIGraph) (*OpenAPI, error) {
 				paths[path] = map[string]Path{}
 			}
 			for _, op := range ops {
-				allParams := append([]Parameter{}, newParams...) // копируем inherited
+				allParams := append([]Parameter{}, newParams...)
 				for _, qp := range op.QueryParameters {
 					allParams = append(allParams, Parameter{
 						Name:     qp.Name,
@@ -130,7 +131,6 @@ func buildOpenAPI(graph *sharedpb.APIGraph) (*OpenAPI, error) {
 		}
 	}
 
-	// Запуск DFS с корней
 	used := map[string]bool{}
 	for _, e := range graph.Edges {
 		used[e.To] = true
