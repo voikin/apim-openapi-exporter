@@ -9,7 +9,7 @@ import (
 )
 
 func (c *Controller) BuildOpenAPISpec(_ context.Context, req *openapiexporterpb.BuildOpenAPISpecRequest) (*openapiexporterpb.BuildOpenAPISpecResponse, error) {
-	spec, err := buildOpenAPI(req.ApiGraph)
+	spec, err := buildOpenAPI(req.GetApiGraph())
 	if err != nil {
 		return nil, fmt.Errorf("buildOpenAPI: %w", err)
 	}
